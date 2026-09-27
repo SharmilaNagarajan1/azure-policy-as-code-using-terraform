@@ -1,0 +1,60 @@
+name: Azure Policy CI/CD
+
+on:
+  push:
+    branches:
+      - main    
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch: 
+
+env:
+  ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+  ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+  TF_CLOUD_ORGANIZATION: Sharmila
+
+jobs:
+  deploy-policy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.x
+        cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+    - name: Terraform Init      
+      run: |
+        cd policy-module
+        terraform init
+      
+
+    - name: Terraform Validate
+      run: |
+        cd policy-module 
+        terraform validate
+      
+
+    - name: Terraform Plan
+      run: |
+        cd policy-module 
+        terraform plan -no-color -input=false
+      
+
+    - name: Terraform Apply
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: |
+        cd policy-module
+        terraform apply -auto-approve -input=false
+      
+
+
+
+
